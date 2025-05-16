@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Veri Ön İşleme Oyunu</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f9f6ed; color: #222; }
+        h2 { color: #13592a; }
+        table { margin: 24px 0; border-collapse: collapse; width: 100%; max-width: 450px;}
+        td, th { border: 1px solid #c9c9c9; padding: 6px 10px; text-align: center; }
+        th { background: #e3eddc; }
+        input[type="number"], input[type="text"] { width: 70px; text-align: center; }
+        button { margin: 7px 3px; padding: 6px 15px; background: #13592a; color: #fff; border-radius: 9px; border: none; font-size: 15px; }
+        .highlight { background: #ffe599 !important; }
+        .result { background: #e8f5e9; margin: 8px 0; padding: 8px; border-radius: 8px; color: #13592a; }
+        .note { font-size: 14px; color: #8c8c8c; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h2>Veri Temizleme ve Dönüştürme Oyunu</h2>
+    <div>
+        <table id="dataTable">
+            <tr>
+                <th>Öğrenci</th>
+                <th>Yaş</th>
+                <th>Boy (cm)</th>
+                <th>Kilo (kg)</th>
+            </tr>
+            <tr>
+                <td>Ali</td>
+                <td><input type="text" value="On" /></td>
+                <td><input type="number" value="145" /></td>
+                <td><input type="number" value="40" /></td>
+            </tr>
+            <tr>
+                <td>Zeynep</td>
+                <td><input type="number" value="12" /></td>
+                <td><input type="number" value="" placeholder="?" /></td>
+                <td><input type="number" value="36" /></td>
+            </tr>
+            <tr>
+                <td>Ahmet</td>
+                <td><input type="text" value="on üç" /></td>
+                <td><input type="number" value="134" /></td>
+                <td><input type="number" value="-20" /></td>
+            </tr>
+            <tr>
+                <td>Ayşe</td>
+                <td><input type="number" value="14" /></td>
+                <td><input type="text" value="abc" /></td>
+                <td><input type="number" value="37" /></td>
+            </tr>
+            <tr>
+                <td>Emre</td>
+                <td><input type="number" value="13" /></td>
+                <td><input type="number" value="141" /></td>
+                <td><input type="number" value="" placeholder="?" /></td>
+            </tr>
+        </table>
+        <button onclick="transformAges()">Yaşları Sayıya Dönüştür</button>
+        <button onclick="cleanData()">Temizle & Düzelt</button>
+        <button onclick="fillMissing()">Eksikleri Ortalama ile Doldur</button>
+        <button onclick="handleOutliers()">Aykırıları Düzelt</button>
+        <button onclick="resetGame()">Sıfırla</button>
+    </div>
+    <div id="resultArea" class="result"></div>
+    <div class="note">İpuçları: <br>- Eksik yerleri boş bırak ya da yanlış değer gir!<br>- Her adımda butonları dene, sonucu incele!</div>
+    <script>
+        // Yaş dönüşümü için metin-sayı haritası
+        const ageMap = { "on": 10, "on üç": 13, "onbir": 11, "on iki": 12, "on dört": 14, "onbeş": 15 };
+
+        function transformAges() {
+            let table = document.getElementById("dataTable");
+            let updated = false;
+            for (let i = 1; i < table.rows.length; i++) {
+                let cell = table.rows[i].cells[1].children[0];
+                let val = cell.value.trim().toLowerCase();
+                if (ageMap[val] !== undefined) {
+                    cell.value = ageMap[val];
+                    updated = true;
+                }
+            }
+            showMessage(updated ? "Metin yaşlar başarıyla sayıya dönüştürüldü." : "Dönüştürülecek metin yaş bulunamadı.");
+        }
+
+        function cleanData() {
+            let table = document.getElementById("dataTable");
+            let cleaned = false;
+            for (let i = 1; i < table.rows.length; i++) {
+                // Boy
+                let boyCell = table.rows[i].cells[2].children[0];
+                if (isNaN(boyCell.value) || boyCell.value === "" || boyCell.value === "abc") {
+                    boyCell.value = "";
+                    boyCell.classList.add("highlight");
+                    cleaned = true;
+                } else {
+                    boyCell.classList.remove("highlight");
+                }
+                // Kilo
+                let kiloCell = table.rows[i].cells[3].children[0];
+                if (isNaN(kiloCell.value) || kiloCell.value === "" || Number(kiloCell.value) <= 0) {
+                    kiloCell.value = "";
+                    kiloCell.classList.add("highlight");
+                    cleaned = true;
+                } else {
+                    kiloCell.classList.remove("highlight");
+                }
+            }
+            showMessage(cleaned ? "Hatalı/eksik değerler temizlendi! Şimdi eksikleri doldur." : "Temizlenecek değer bulunamadı.");
+        }
+
+        function fillMissing() {
+            let table = document.getElementById("dataTable");
+            // Boy için ortalama
+            let boySum = 0, boyCount = 0;
+            for (let i = 1; i < table.rows.length; i++) {
+                let val = table.rows[i].cells[2].children[0].value;
+                if (val && !isNaN(val)) { boySum += Number(val); boyCount++; }
+            }
+            let boyMean = boyCount ? Math.round(boySum / boyCount) : null;
+            // Kilo için ortalama
+            let kiloSum = 0, kiloCount = 0;
+            for (let i = 1; i < table.rows.length; i++) {
+                let val = table.rows[i].cells[3].children[0].value;
+                if (val && !isNaN(val)) { kiloSum += Number(val); kiloCount++; }
+            }
+            let kiloMean = kiloCount ? Math.round(kiloSum / kiloCount) : null;
+            // Eksikleri doldur
+            for (let i = 1; i < table.rows.length; i++) {
+                let boyCell = table.rows[i].cells[2].children[0];
+                if (boyCell.value === "") {
+                    boyCell.value = boyMean;
+                    boyCell.classList.add("highlight");
+                }
+                let kiloCell = table.rows[i].cells[3].children[0];
+                if (kiloCell.value === "") {
+                    kiloCell.value = kiloMean;
+                    kiloCell.classList.add("highlight");
+                }
+            }
+            showMessage("Eksik değerler ortalama ile dolduruldu! Aykırı değerler için sonraki adımı dene.");
+        }
+
+        function handleOutliers() {
+            let table = document.getElementById("dataTable");
+            // Kilo sütununda aşırı düşük (0 ve altı) ya da yüksek (>120) varsa ortalama ile baskıla
+            let kiloSum = 0, kiloCount = 0;
+            let kilos = [];
+            for (let i = 1; i < table.rows.length; i++) {
+                let val = table.rows[i].cells[3].children[0].value;
+                if (val && !isNaN(val) && Number(val) > 0 && Number(val) < 120) {
+                    kiloSum += Number(val); kiloCount++;
+                    kilos.push(Number(val));
+                }
+            }
+            let kiloMean = kiloCount ? Math.round(kiloSum / kiloCount) : null;
+            for (let i = 1; i < table.rows.length; i++) {
+                let kiloCell = table.rows[i].cells[3].children[0];
+                let v = Number(kiloCell.value);
+                if (!isNaN(v) && (v <= 0 || v > 120)) {
+                    kiloCell.value = kiloMean;
+                    kiloCell.classList.add("highlight");
+                }
+            }
+            showMessage("Aykırı değerler ortalamaya baskılandı.");
+        }
+
+        function resetGame() {
+            location.reload();
+        }
+
+        function showMessage(msg) {
+            document.getElementById("resultArea").innerText = msg;
+        }
+    </script>
+</body>
+</html>
